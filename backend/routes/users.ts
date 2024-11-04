@@ -1,13 +1,7 @@
 import Router from "@koa/router";
-import { Role, User } from "../../api-types";
-import {
-  add,
-  edit,
-  getUsersByRole,
-  index,
-  remove,
-  view,
-} from "../services/user";
+import { User, Role } from "../../api-types";
+import { edit, add, getUsersByRole, index, getUsersWithoutClass, remove, view } from "../services/user";
+// import {   } from "../services/user";
 
 const router = new Router({
   prefix: "/users",
@@ -16,34 +10,40 @@ const router = new Router({
 // All routes
 router.get("/", async (ctx) => {
   const all = await index();
-  ctx.response.body = all;
+  ctx.body = all;
 });
 
+// Find all users with a determinated role
 router.get("/role/:role", async (ctx) => {
   ctx.body = await getUsersByRole(ctx.params.role as Role);
 });
 
-// Find a user
+// Find all studens without a class
+router.get("/students-without-class", async (ctx) => {
+  ctx.body = await getUsersWithoutClass();
+});
+
+// Find a single user
 router.get("/:id", async (ctx) => {
-  const user = await view(ctx.params.id);
-
-  if (!user) {
-    // User not found
-    ctx.status = 404;
-    return;
-  }
-
-  ctx.body = user;
+  ctx.body = await view(ctx.params.id);
 });
 
 // Add a user
 router.post("/", async (ctx) => {
-  ctx.accepts("json");
-  const user = await add(ctx.request.body as User);
-  ctx.response.body = user;
+  try {
+    ctx.accepts("json");
+    const body = await add(ctx.request.body as User);
+    ctx.response.body = body;
+  } catch (error) {
+    ctx.response.status = 500;
+    ctx.response.body = {
+      message: "Si è verificato un errore",
+      error: error.message
+    };
+  }
 });
 
-// Edit a user
+// Modify a user
 router.put("/:id", async (ctx) => {
   ctx.accepts("json");
   const response = await edit(ctx.params.id, ctx.request.body as User);
